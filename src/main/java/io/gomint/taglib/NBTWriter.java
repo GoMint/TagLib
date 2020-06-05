@@ -61,6 +61,13 @@ public class NBTWriter {
 		this.useVarint = useVarint;
 	}
 
+	public void write( List<Object> list ) throws IOException {
+		this.writeTagHeader( NBTDefinitions.TAG_LIST, "" );
+		this.writeListValue(list);
+		this.flush();
+		this.out.flush();
+	}
+
 	public void write( NBTTagCompound compound ) throws IOException {
 		this.writeTagHeader( NBTDefinitions.TAG_COMPOUND, compound.getName() );
 		this.writeCompoundValue( compound );

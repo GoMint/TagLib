@@ -41,6 +41,16 @@ public class NBTReader extends NBTStreamReader {
 		super( in, byteOrder );
 	}
 
+	public List<Object> parseList() throws IOException, AllocationLimitReachedException {
+		this.expectInput( 3, "Invalid NBT Data: Not enough data to read new tag", false );
+		if ( this.buffer.get() != NBTDefinitions.TAG_LIST ) {
+			throw new IOException( "Invalid NBT Data: No list tag found" );
+		}
+
+		this.readStringValue();
+		return this.readTagListValue();
+	}
+
 	public NBTTagCompound parse() throws IOException, AllocationLimitReachedException {
 		this.expectInput( 3, "Invalid NBT Data: Not enough data to read new tag", false );
 		if ( this.buffer.get() != NBTDefinitions.TAG_COMPOUND ) {
