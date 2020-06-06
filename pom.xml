@@ -10,6 +10,10 @@
 
     <repositories>
         <repository>
+            <id>projectlombok.org</id>
+            <url>https://projectlombok.org/edge-releases</url>
+        </repository>
+        <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2</url>
             <releases>
@@ -49,7 +53,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.4</version>
+                            <version>edge-SNAPSHOT</version>
                         </path>
                     </annotationProcessorPaths>
                     <!-- this helps when getting error: file should be on source path, or on patch path for module -->
@@ -66,7 +70,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.4</version>
+            <version>edge-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
