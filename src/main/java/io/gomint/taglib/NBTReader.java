@@ -25,6 +25,7 @@
 
 package io.gomint.taglib;
 
+import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
@@ -37,13 +38,13 @@ import java.util.List;
  */
 public class NBTReader extends NBTStreamReader {
 
-	public NBTReader( InputStream in, ByteOrder byteOrder ) {
+	public NBTReader( ByteBuf in, ByteOrder byteOrder ) {
 		super( in, byteOrder );
 	}
 
 	public List<Object> parseList() throws IOException, AllocationLimitReachedException {
-		this.expectInput( 3, "Invalid NBT Data: Not enough data to read new tag", false );
-		if ( this.buffer.get() != NBTDefinitions.TAG_LIST ) {
+		this.expectInput( this.varint() ? 2 : 3, "Invalid NBT Data: Not enough data to read new tag", false );
+		if ( this.readByteValue() != NBTDefinitions.TAG_LIST ) {
 			throw new IOException( "Invalid NBT Data: No list tag found" );
 		}
 
@@ -52,8 +53,8 @@ public class NBTReader extends NBTStreamReader {
 	}
 
 	public NBTTagCompound parse() throws IOException, AllocationLimitReachedException {
-		this.expectInput( 3, "Invalid NBT Data: Not enough data to read new tag", false );
-		if ( this.buffer.get() != NBTDefinitions.TAG_COMPOUND ) {
+		this.expectInput( this.varint() ? 2 : 3, "Invalid NBT Data: Not enough data to read new tag", false );
+		if ( this.readByteValue() != NBTDefinitions.TAG_COMPOUND ) {
 			throw new IOException( "Invalid NBT Data: No root tag found" );
 		}
 
@@ -117,7 +118,7 @@ public class NBTReader extends NBTStreamReader {
 	}
 	
 	private List<Object> readTagListValue() throws IOException, AllocationLimitReachedException {
-		this.expectInput( 5, "Invalid NBT Data: Expected TAGList header", false );
+		this.expectInput( this.varint() ? 2 : 5, "Invalid NBT Data: Expected TAGList header", false );
 		byte listType = this.readByteValue();
 		int listLength = this.readIntValue();
 

@@ -1,5 +1,6 @@
 package io.gomint.taglib;
 
+import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
@@ -22,7 +23,7 @@ public class NBTStream extends NBTStreamReader {
     private NBTStreamListener nbtStreamListener;
     private Function<String, Boolean> nbtCompoundAcceptor;
 
-    public NBTStream( InputStream in, ByteOrder byteOrder ) {
+    public NBTStream( ByteBuf in, ByteOrder byteOrder ) {
         super( in, byteOrder );
         this.state = StreamState.INIT;
     }
@@ -46,9 +47,9 @@ public class NBTStream extends NBTStreamReader {
             return;
         }
 
-        this.fetchInput( "Invalid NBT Data: No data at all" );
-        if ( this.buffer.remaining() < 3 || this.buffer.get() != NBTDefinitions.TAG_COMPOUND ) {
-            throw new IOException( "Invalid NBT Data: No root tag found" );
+        this.expectInput( 2, "Invalid NBT Data: Not enough data to read new tag", false );
+        if ( this.readByteValue() != NBTDefinitions.TAG_COMPOUND ) {
+            throw new IOException( "Invalid NBT Data: No list tag found" );
         }
 
         // Start reading the compound
