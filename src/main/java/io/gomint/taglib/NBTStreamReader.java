@@ -89,12 +89,22 @@ public class NBTStreamReader {
 
     protected float readFloatValue() throws IOException, AllocationLimitReachedException {
         this.expectInput( 4, "Invalid NBT Data: Expected float" );
-        return Float.intBitsToFloat( this.readIntValue() );
+
+        if (this.byteOrder == ByteOrder.LITTLE_ENDIAN) {
+            return this.in.readFloatLE();
+        }
+
+        return this.in.readFloat();
     }
 
     protected double readDoubleValue() throws IOException, AllocationLimitReachedException {
         this.expectInput( 8, "Invalid NBT Data: Expected double" );
-        return Double.longBitsToDouble( this.readLongValue() );
+
+        if (this.byteOrder == ByteOrder.LITTLE_ENDIAN) {
+            return this.in.readDoubleLE();
+        }
+
+        return this.in.readDouble();
     }
 
     protected byte[] readByteArrayValue() throws IOException, AllocationLimitReachedException {
