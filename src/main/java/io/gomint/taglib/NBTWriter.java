@@ -156,7 +156,7 @@ public class NBTWriter {
     if (this.order == ByteOrder.LITTLE_ENDIAN) {
       this.buf.writeIntLE(value.length);
     } else {
-      this.buf.writeIntLE(value.length);
+      this.buf.writeInt(value.length);
     }
 
     this.buf.writeBytes(value);
