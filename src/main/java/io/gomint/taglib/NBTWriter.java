@@ -151,14 +151,9 @@ public class NBTWriter {
   }
 
   private void writeByteArrayValue(byte[] value) throws IOException {
-    this.ensureCapacity(value.length + 4);
+    this.ensureCapacity(value.length);
 
-    if (this.order == ByteOrder.LITTLE_ENDIAN) {
-      this.buf.writeIntLE(value.length);
-    } else {
-      this.buf.writeInt(value.length);
-    }
-
+    this.writeIntegerValue(value.length);
     this.buf.writeBytes(value);
   }
 
@@ -259,20 +254,10 @@ public class NBTWriter {
   }
 
   private void writeIntegerArrayValue(int[] value) throws IOException {
-    this.ensureCapacity(4 * value.length + 4);
-
-    if (this.order == ByteOrder.LITTLE_ENDIAN) {
-      this.buf.writeIntLE(value.length);
-    } else {
-      this.buf.writeInt(value.length);
-    }
+    this.writeIntegerValue(value.length);
 
     for (int item : value) {
-      if (this.order == ByteOrder.LITTLE_ENDIAN) {
-        this.buf.writeIntLE(item);
-      } else {
-        this.buf.writeInt(item);
-      }
+      this.writeIntegerValue(item);
     }
   }
 
