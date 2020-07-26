@@ -25,21 +25,22 @@
 
 package io.gomint.taglib;
 
-import io.gomint.server.jni.NativeCode;
-import io.gomint.server.jni.zlib.JavaZLib;
-import io.gomint.server.jni.zlib.NativeZLib;
-import io.gomint.server.jni.zlib.ZLib;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import java.util.zip.DataFormatException;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteOrder;
-import java.util.*;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a compound tag that may hold several children tags.
@@ -51,52 +52,20 @@ import java.util.zip.GZIPOutputStream;
 @EqualsAndHashCode()
 public class NBTTagCompound implements Cloneable {
 
-  private static final NativeCode<ZLib> ZLIB = new NativeCode<>("zlib", JavaZLib.class,
-      NativeZLib.class);
-  private static final ThreadLocal<ZLib> COMPRESSOR = new ThreadLocal<>();
-  private static final ThreadLocal<ZLib> DECOMPRESSOR = new ThreadLocal<>();
-
-  static {
-    ZLIB.load();
-  }
-
-  private static ZLib getCompressor() {
-    if (COMPRESSOR.get() == null) {
-      ZLib zLib = ZLIB.newInstance();
-      zLib.init(true, true, 7);
-      COMPRESSOR.set(zLib);
-      return zLib;
-    }
-
-    return COMPRESSOR.get();
-  }
-
-  private static ZLib getDecompressor() {
-    if (DECOMPRESSOR.get() == null) {
-      ZLib zLib = ZLIB.newInstance();
-      zLib.init(false, true, 7);
-      DECOMPRESSOR.set(zLib);
-      return zLib;
-    }
-
-    return DECOMPRESSOR.get();
-  }
-
   /**
-   * Reads the NBTTagCompound from the specified file. See {@link #readFrom(ByteBuf, boolean,
+   * Reads the NBTTagCompound from the specified file. See {@link #readFrom(ByteBuf,
    * ByteOrder)} for further details.
    *
    * @param file       The file to read the NBTCompound from
-   * @param compressed Whether or not the input is compressed
    * @return The compound tag that was read from the input source
    * @throws IOException Thrown in case an I/O error occurs or invalid NBT data is encountered
    */
-  public static NBTTagCompound readFrom(File file, boolean compressed, ByteOrder byteOrder)
+  public static NBTTagCompound readFrom(File file, ByteOrder byteOrder)
       throws IOException, AllocationLimitReachedException {
     try (FileInputStream in = new FileInputStream(file)) {
       ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((int) file.length());
       buffer.writeBytes(in, (int) file.length());
-      NBTTagCompound compound = readFrom(buffer, compressed, byteOrder);
+      NBTTagCompound compound = readFrom(buffer, byteOrder);
       buffer.release();
       return compound;
     }
@@ -110,31 +79,13 @@ public class NBTTagCompound implements Cloneable {
    * stream is closed automatically.
    *
    * @param in         The input stream to read from
-   * @param compressed Whether or not the input is compressed
    * @return The compound tag that was read from the input source
    * @throws IOException Thrown in case an I/O error occurs or invalid NBT data is encountered
    */
-  public static NBTTagCompound readFrom(ByteBuf in, boolean compressed, ByteOrder byteOrder)
+  public static NBTTagCompound readFrom(ByteBuf in, ByteOrder byteOrder)
       throws IOException, AllocationLimitReachedException {
-
-    ByteBuf out = in;
-    if (compressed) {
-      try {
-        out = PooledByteBufAllocator.DEFAULT.directBuffer();
-        getDecompressor().process(in.nioBuffer(in.readerIndex(), in.readableBytes()), out);
-      } catch (DataFormatException e) {
-        throw new IOException("could not decompress", e);
-      }
-    }
-
-    NBTReader reader = new NBTReader(out, byteOrder);
-    NBTTagCompound co = reader.parse();
-
-    if (compressed) {
-      out.release();
-    }
-
-    return co;
+    NBTReader reader = new NBTReader(in, byteOrder);
+    return reader.parse();
   }
 
   private String name;
@@ -442,18 +393,17 @@ public class NBTTagCompound implements Cloneable {
   }
 
   /**
-   * Writes the NBTTagCompound to the specified file. See {@link #writeTo(ByteBuf, boolean,
+   * Writes the NBTTagCompound to the specified file. See {@link #writeTo(ByteBuf,
    * ByteOrder)} for further details.
    *
    * @param file       The file to write the NBTCompound to
-   * @param compressed Whether or not the output should be compressed
    * @param byteOrder  The byteorder to use
    * @throws IOException Thrown in case an I/O error occurs or invalid NBT data is encountered
    */
-  public void writeTo(File file, boolean compressed, ByteOrder byteOrder) throws IOException {
+  public void writeTo(File file, ByteOrder byteOrder) throws IOException {
     try (FileOutputStream out = new FileOutputStream(file)) {
       ByteBuf buf = PooledByteBufAllocator.DEFAULT.directBuffer();
-      this.writeTo(buf, compressed, byteOrder);
+      this.writeTo(buf, byteOrder);
 
       byte[] data = new byte[buf.readableBytes()];
       buf.readBytes(data);
@@ -470,27 +420,12 @@ public class NBTTagCompound implements Cloneable {
    * stream is closed automatically.
    *
    * @param out        The output stream to write to
-   * @param compressed Whether or not the output is compressed
    * @param byteOrder  The byteorder to use
    * @throws IOException Thrown in case an I/O error occurs or invalid NBT data is encountered
    */
-  public void writeTo(ByteBuf out, boolean compressed, ByteOrder byteOrder) throws IOException {
-    ByteBuf in = out;
-    if (compressed) {
-      in = PooledByteBufAllocator.DEFAULT.directBuffer();
-    }
-
-    NBTWriter writer = new NBTWriter(in, byteOrder);
+  public void writeTo(ByteBuf out, ByteOrder byteOrder) throws IOException {
+    NBTWriter writer = new NBTWriter(out, byteOrder);
     writer.write(this);
-
-    if (compressed) {
-      try {
-        getCompressor().process(in.nioBuffer(in.readerIndex(), in.readableBytes()), out);
-        in.release();
-      } catch (DataFormatException e) {
-        throw new IOException("could not compress", e);
-      }
-    }
   }
 
   /**
