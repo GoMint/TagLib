@@ -27,8 +27,6 @@ package io.gomint.taglib;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,6 +38,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -48,8 +47,6 @@ import java.util.Set;
  * @author BlackyPaw
  * @version 1.0
  */
-@ToString
-@EqualsAndHashCode()
 public class NBTTagCompound implements Cloneable {
 
   /**
@@ -535,5 +532,28 @@ public class NBTTagCompound implements Cloneable {
    */
   void setName(String name) {
     this.name = name;
+  }
+
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    NBTTagCompound compound = (NBTTagCompound) o;
+    return Objects.equals(name, compound.name) &&
+            Objects.equals(children, compound.children);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, children);
+  }
+
+  @Override
+  public String toString() {
+    return "NBTTagCompound{" +
+            "name='" + name + '\'' +
+            ", children=" + children +
+            '}';
   }
 }

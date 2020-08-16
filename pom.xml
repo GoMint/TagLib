@@ -10,10 +10,6 @@
 
     <repositories>
         <repository>
-            <id>projectlombok.org</id>
-            <url>https://projectlombok.org/edge-releases</url>
-        </repository>
-        <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2</url>
             <releases>
@@ -49,31 +45,12 @@
                 <version>3.8.0</version>
                 <configuration>
                     <release>11</release>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>edge-SNAPSHOT</version>
-                        </path>
-                    </annotationProcessorPaths>
-                    <!-- this helps when getting error: file should be on source path, or on patch path for module -->
-                    <compilerArgs>
-                        <arg>-sourcepath</arg>
-                        <arg>${project.basedir}/src/main/java${path.separator}${project.basedir}/target/generated-sources/annotations${path.separator}/</arg>
-                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>edge-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
