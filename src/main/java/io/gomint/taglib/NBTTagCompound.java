@@ -225,6 +225,16 @@ public class NBTTagCompound implements Cloneable {
   }
 
   /**
+   * Adds the specified value to the compound given the name used to store it.
+   *
+   * @param name  The name of the value
+   * @param value The value to be stored
+   */
+  public void addValue(String name, Object value) {
+    this.children.put(name, value);
+  }
+
+  /**
    * Adds the specified tag as a child tag of this compound. This method is effectively the same as
    * calling {@link #addValue(String, NBTTagCompound)} and specified tag.getName() as the name.
    *
