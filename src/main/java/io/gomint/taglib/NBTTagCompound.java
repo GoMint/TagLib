@@ -33,9 +33,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -86,7 +88,10 @@ public class NBTTagCompound implements Cloneable {
   }
 
   private String name;
-  private Map<String, Object> children;
+
+  private String[] keys = new String[0];
+  private Object[] values = new Object[0];
+  private int size;
 
   /**
    * Constructs a new NBTTagCompound given its name. If no name is specified, i.e. name == null, the
@@ -97,7 +102,21 @@ public class NBTTagCompound implements Cloneable {
   public NBTTagCompound(final String name) {
     super();
     this.name = name;
-    this.children = new HashMap<>();
+    this.ensureCapacity(8);
+  }
+
+  private void ensureCapacity(int numOfElements) {
+    if (this.keys.length < numOfElements) {
+      String[] copy = new String[numOfElements * 2];
+      System.arraycopy(this.keys, 0, copy, 0, this.keys.length);
+      this.keys = copy;
+    }
+
+    if (this.values.length < numOfElements) {
+      Object[] copy = new Object[numOfElements * 2];
+      System.arraycopy(this.values, 0, copy, 0, this.values.length);
+      this.values = copy;
+    }
   }
 
   /**
@@ -116,7 +135,49 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, byte value) {
-    this.children.put(name, value);
+    this.set(name, value);
+  }
+
+  private <V> V get(String key, V defaultValue) {
+    int keyIndex = this.getKeyIndex(key);
+    if (keyIndex != -1) {
+      return (V) this.values[keyIndex];
+    }
+
+    return defaultValue;
+  }
+
+  private void set(String key, Object value) {
+    // Check if the key already is known
+    int keyIndex = this.getKeyIndex(key);
+    if (keyIndex != -1) {
+      this.values[keyIndex] = value;
+      return;
+    }
+
+    // Store new value
+    this.ensureCapacity(this.size + 1);
+
+    // Check for first null
+    for (int i = 0; i < this.keys.length; i++) {
+      if (this.keys[i] == null) {
+        this.keys[i] = key;
+        this.values[i] = value;
+        break;
+      }
+    }
+
+    this.size++;
+  }
+
+  private int getKeyIndex(String key) {
+    for (int i = 0; i < this.keys.length; i++) {
+      if (key.equals(this.keys[i])) {
+        return i;
+      }
+    }
+
+    return -1;
   }
 
   /**
@@ -126,7 +187,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, short value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -136,7 +197,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, int value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -146,7 +207,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, long value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -156,7 +217,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, float value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -166,7 +227,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, byte[] value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -176,7 +237,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, String value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -186,7 +247,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, double value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -196,7 +257,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, int[] value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -206,7 +267,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, List value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -221,7 +282,7 @@ public class NBTTagCompound implements Cloneable {
           "Failed to add NBTTagCompound with name '" + value.getName() + "' given name '" + name
               + "'");
     }
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -231,7 +292,7 @@ public class NBTTagCompound implements Cloneable {
    * @param value The value to be stored
    */
   public void addValue(String name, Object value) {
-    this.children.put(name, value);
+    this.set(name, value);
   }
 
   /**
@@ -241,7 +302,7 @@ public class NBTTagCompound implements Cloneable {
    * @param tag The tag to be added as a child
    */
   public void addChild(NBTTagCompound tag) {
-    this.children.put(tag.getName(), tag);
+    this.set(tag.getName(), tag);
   }
 
   /**
@@ -253,7 +314,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public Byte getByte(String name, Byte defaultValue) {
-    return (this.children.containsKey(name) ? (Byte) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -265,7 +326,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public Short getShort(String name, Short defaultValue) {
-    return (this.children.containsKey(name) ? (Short) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -277,7 +338,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public Integer getInteger(String name, Integer defaultValue) {
-    return (this.children.containsKey(name) ? (Integer) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -289,7 +350,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public Long getLong(String name, Long defaultValue) {
-    return (this.children.containsKey(name) ? (Long) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -301,7 +362,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public Float getFloat(String name, Float defaultValue) {
-    return (this.children.containsKey(name) ? (Float) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -313,7 +374,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public Double getDouble(String name, Double defaultValue) {
-    return (this.children.containsKey(name) ? (Double) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -325,7 +386,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public String getString(String name, String defaultValue) {
-    return (this.children.containsKey(name) ? (String) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -337,7 +398,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public byte[] getByteArray(String name, byte[] defaultValue) {
-    return (this.children.containsKey(name) ? (byte[]) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -349,7 +410,7 @@ public class NBTTagCompound implements Cloneable {
    * @return The value of the attribute
    */
   public int[] getIntegerArray(String name, int[] defaultValue) {
-    return (this.children.containsKey(name) ? (int[]) this.children.get(name) : defaultValue);
+    return this.get(name, defaultValue);
   }
 
   /**
@@ -363,12 +424,13 @@ public class NBTTagCompound implements Cloneable {
    */
   @SuppressWarnings("unchecked")
   public List<Object> getList(String name, boolean insert) {
-    if (this.children.containsKey(name)) {
-      return (List<Object>) this.children.get(name);
+    List<Object> backingList = this.get(name, null);
+    if (backingList != null) {
+      return backingList;
     }
 
     if (insert) {
-      List<Object> backingList = new ArrayList<>(0);
+      backingList = new ArrayList<>(0);
       this.addValue(name, backingList);
       return backingList;
     } else {
@@ -386,12 +448,13 @@ public class NBTTagCompound implements Cloneable {
    * @return The compound or null
    */
   public NBTTagCompound getCompound(String name, boolean insert) {
-    if (this.children.containsKey(name)) {
-      return (NBTTagCompound) this.children.get(name);
+    NBTTagCompound compound = this.get(name, null);
+    if (compound != null) {
+      return compound;
     }
 
     if (insert) {
-      NBTTagCompound compound = new NBTTagCompound(name);
+      compound = new NBTTagCompound(name);
       this.addValue(name, compound);
       return compound;
     } else {
@@ -441,7 +504,15 @@ public class NBTTagCompound implements Cloneable {
    * @return The set of entries the compound holds
    */
   public Set<Map.Entry<String, Object>> entrySet() {
-    return this.children.entrySet();
+    Set<Map.Entry<String, Object>> sets = new HashSet<>();
+    for (int i = 0; i < this.keys.length; i++) {
+      String key = this.keys[i];
+      if (key != null) {
+        sets.add(new AbstractMap.SimpleImmutableEntry<>(key, this.values[i]));
+      }
+    }
+
+    return sets;
   }
 
   /**
@@ -451,7 +522,7 @@ public class NBTTagCompound implements Cloneable {
    * @return Whether or not the compound contains a child tag with the specified name
    */
   public boolean containsKey(String key) {
-    return this.children.containsKey(key);
+    return this.getKeyIndex(key) != -1;
   }
 
   /**
@@ -461,7 +532,16 @@ public class NBTTagCompound implements Cloneable {
    * @return The object which has been removed or null when nothing has been removed
    */
   public Object remove(String key) {
-    return this.children.remove(key);
+    int keyIndex = this.getKeyIndex(key);
+    if (keyIndex == -1) {
+      return null;
+    }
+
+    Object value = this.values[keyIndex];
+    this.keys[keyIndex] = null;
+    this.values[keyIndex] = null;
+    this.size--;
+    return value;
   }
 
   /**
@@ -470,7 +550,7 @@ public class NBTTagCompound implements Cloneable {
    * @return amount of children
    */
   public int size() {
-    return this.children.size();
+    return this.size;
   }
 
   /**
@@ -489,52 +569,15 @@ public class NBTTagCompound implements Cloneable {
   private NBTTagCompound deepClone0() {
     NBTTagCompound compound = new NBTTagCompound();
     compound.name = this.name;
-    compound.children = new HashMap<>(this.children.size());
-    for (Map.Entry<String, Object> child : this.children.entrySet()) {
-      Object value = child.getValue();
-      if (value instanceof byte[]) {
-        byte[] data = (byte[]) value;
-        compound.addValue(child.getKey(), Arrays.copyOf(data, data.length));
-      } else if (value instanceof List) {
-        compound.addValue(child.getKey(), this.deepCloneList((List) value));
-      } else if (value instanceof int[]) {
-        int[] data = (int[]) value;
-        compound.addValue(child.getKey(), Arrays.copyOf(data, data.length));
-      } else if (value instanceof NBTTagCompound) {
-        compound.addChild(((NBTTagCompound) value).deepClone0());
-      } else {
-        // Other supported types are immutable:
-        compound.children.put(child.getKey(), child.getValue());
-      }
-    }
+    compound.keys = Arrays.copyOf(this.keys, this.keys.length);
+    compound.values = Arrays.copyOf(this.values, this.values.length);
     return compound;
-  }
-
-  private List deepCloneList(List input) {
-    List output = new ArrayList(input.size());
-    for (Object value : input) {
-      if (value instanceof byte[]) {
-        byte[] data = (byte[]) value;
-        output.add(Arrays.copyOf(data, data.length));
-      } else if (value instanceof List) {
-        output.add(this.deepCloneList((List) value));
-      } else if (value instanceof int[]) {
-        int[] data = (int[]) value;
-        output.add(Arrays.copyOf(data, data.length));
-      } else if (value instanceof NBTTagCompound) {
-        output.add(((NBTTagCompound) value).deepClone0());
-      } else {
-        // Other supported types are immutable:
-        output.add(value);
-      }
-    }
-    return output;
   }
 
   NBTTagCompound() {
     super();
     this.name = null;
-    this.children = new HashMap<>();
+    this.ensureCapacity(8);
   }
 
   /**
@@ -544,26 +587,29 @@ public class NBTTagCompound implements Cloneable {
     this.name = name;
   }
 
-
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     NBTTagCompound compound = (NBTTagCompound) o;
     return Objects.equals(name, compound.name) &&
-            Objects.equals(children, compound.children);
+            Arrays.equals(keys, compound.keys) &&
+            Arrays.equals(values, compound.values);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, children);
+    return Objects.hash(name, keys, values);
   }
 
   @Override
   public String toString() {
-    return "NBTTagCompound{" +
-            "name='" + name + '\'' +
-            ", children=" + children +
-            '}';
+    return "{\"_class\":\"NBTTagCompound\", " +
+            "\"name\":" + (name == null ? "null" : "\"" + name + "\"") + ", " +
+            "\"keys\":" + Arrays.toString(keys) + ", " +
+            "\"values\":" + Arrays.toString(values) + ", " +
+            "\"size\":\"" + size + "\"" +
+            "}";
   }
+
 }
